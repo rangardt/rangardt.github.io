@@ -10,8 +10,8 @@ const request = {
         name: "sma",
         value: 126
     }],
-    assets_to_hold: 8,
-    invest_day: 26,
+    assets_to_hold: 10,
+    invest_day: 25,
     capital: 10000
 };
 
@@ -92,7 +92,7 @@ $.ajax({
         },
 
         series: [{
-            name: 'Sugardaddy',
+            name: 'Moving Average Investment',
             data: data,
             type: 'area',
             lineWidth: 1,
