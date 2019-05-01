@@ -18,7 +18,7 @@ const request = {
 $.ajax({
   type: "POST",
   contentType: "application/json; charset=utf-8",
-  url: "http://investlab.servebeer.com:8080/backcast",
+  url: "https://investlab.servebeer.com:8080/backcast",
   data: JSON.stringify(request),
   success: function (data) {
     var min = Math.min(...data.map(x => x[1]));
@@ -123,7 +123,7 @@ $.ajax({
 $.ajax({
   type: "POST",
   contentType: "application/json; charset=utf-8",
-  url: "http://investlab.servebeer.com:8080/summary",
+  url: "https://investlab.servebeer.com:8080/summary",
   data: JSON.stringify(request),
   success: function (data) {
     document.getElementById('cagr').innerText = (data.cagr*100).toFixed(2) + ' %';
@@ -137,11 +137,11 @@ $.ajax({
   dataType: "json"
 });
 
-$.get("http://investlab.servebeer.com:8080/fund_info", function(fund_info_data) {
+$.get("https://investlab.servebeer.com:8080/fund_info", function(fund_info_data) {
     $.ajax({
         type: "POST",
         contentType: "application/json; charset=utf-8",
-        url: "http://investlab.servebeer.com:8080/decisions",
+        url: "https://investlab.servebeer.com:8080/decisions",
         data: JSON.stringify(request),
         success: function (decisions_data) {
             var tr = document.createElement('tr');
