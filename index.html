@@ -179,7 +179,7 @@ $.get("http://investlab.servebeer.com/fund_info", function(fund_info_data) {
                 
                 for (const x of a) {
                     td = document.createElement('td');
-                    td.innerHTML = x[1];
+                    td.innerHTML = x[1] ? 'KÖP' : 'SÄLJ';
 
                     if(x[1]) {
                         td.style = 'color: green;';
