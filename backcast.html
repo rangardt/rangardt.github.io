@@ -1,0 +1,237 @@
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+
+<script>
+
+const request = {
+    orderbook_ids: [464, 2111, 350, 18986, 2052, 1505, 1933, 2003, 134, 1380, 1288],
+    filters: [{
+        name: "sma",
+        value: 126
+    }],
+    ranking: {
+        name: "momentum",
+        value: {
+            252: 0.1,
+            189: 0.1,
+            126: 0.1,
+            63: 0.7
+        }
+    },
+    assets_to_hold: 3,
+    invest_day: 25,
+    capital: 10000
+};
+
+$.ajax({
+  type: "POST",
+  contentType: "application/json; charset=utf-8",
+  url: "http://investlab.servebeer.com/backcast",
+  data: JSON.stringify(request),
+  success: function (data) {
+    var min = Math.min(...data.map(x => x[1]));
+    var max = Math.max(...data.map(x => x[1]));
+      
+      
+    Highcharts.setOptions({
+        lang: {
+            months: ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"],
+            shortMonths: ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+            weekdays: ["Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"],
+            printChart: "Skriv ut",
+            downloadCSV: "Ladda ner CSV",
+            downloadJPEG: "Ladda ner JPEG",
+            downloadPDF: "Ladda ner PDF",
+            downloadPNG: "Ladda ner PNG",
+            downloadSVG: "Ladda ner SVG",
+            downloadXLS: "Ladda ner XLS",
+            loading: "Laddar...",
+            contextButtonTitle: "Meny",
+            noData: "Ingen data att visa",
+            rangeSelectorFrom: "Från",
+            rangeSelectorTo: "Till"
+        }
+    });
+
+    // create the chart
+    Highcharts.stockChart('container', {
+        chart: {
+            zoomType: 'x'
+        },
+
+        navigator: {
+            adaptToUpdatedData: false,
+            series: {
+                data: data
+            }
+        },
+
+        rangeSelector: {
+            allButtonsEnabled: true,
+            selected: 5
+        },
+
+        xAxis: {
+            events: {
+                afterSetExtremes: function(e) {
+                    var chart = Highcharts.charts[0];
+                    var start = Math.round(e.min);
+                    var end = Math.round(e.max);
+                    var d = data.filter(elem => elem[0] >= start && elem[0] <= end)
+
+                    chart.series[0].setData(d);
+
+                    var min = Math.min(...d.map(x => x[1]));
+                    var max = Math.max(...d.map(x => x[1]));
+
+                    chart.yAxis[0].update({
+                        min: min,
+                        max: max
+                    });
+
+                    chart.redraw()
+                }
+            }
+        },
+
+        yAxis: {
+            floor: min,
+            ceiling: max
+        },
+
+        series: [{
+            name: 'Relative Strength',
+            data: data,
+            type: 'area',
+            lineWidth: 1,
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor: {
+                linearGradient: {
+                    x1: 0,
+                    y1: 0,
+                    x2: 0,
+                    y2: 1
+                },
+                stops: [
+                    [0, Highcharts.getOptions().colors[0]],
+                    [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                ]
+            },
+            dataGrouping: {
+                enabled: false
+            }
+        }]
+    });
+  },
+  dataType: "json"
+});
+
+$.ajax({
+  type: "POST",
+  contentType: "application/json; charset=utf-8",
+  url: "http://investlab.servebeer.com/summary",
+  data: JSON.stringify(request),
+  success: function (data) {
+    document.getElementById('cagr').innerText = (data.cagr*100).toFixed(2) + ' %';
+    document.getElementById('stdev').innerText = (data.stdev*100).toFixed(2) + ' %';
+    document.getElementById('sharpe').innerText = data.sharpe.toFixed(2);
+    document.getElementById('maxdd').innerText = -(data.max_dd.value*100).toFixed(2) + ' %';
+    document.getElementById('from').innerText = data.max_dd.start;
+    document.getElementById('to').innerText = data.max_dd.end;
+    
+  },
+  dataType: "json"
+});
+
+$.get("http://investlab.servebeer.com/fund_info", function(fund_info_data) {
+    $.ajax({
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        url: "http://investlab.servebeer.com/decisions",
+        data: JSON.stringify(request),
+        success: function (decisions_data) {
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            tr.append(td);
+
+            var oids = Object.keys(Object.values(decisions_data)[0])
+            var names = oids.map(oid => fund_info_data[oid].name);
+
+            for(name of names) {
+                td = document.createElement('td');
+                
+                td.innerHTML = name;
+                tr.append(td);
+            }
+            
+            document.getElementById("decision_data").append(tr);
+            tr = document.createElement('tr');
+
+            for (const decision of Object.entries(decisions_data).reverse()) {
+                var td = document.createElement('td');
+                td.innerHTML = decision[0]
+                tr.append(td)
+
+                var a = Object.entries(decision[1])
+                
+                for (const x of a) {
+                    td = document.createElement('td');
+                    td.innerHTML = x[1] ? 'KÖP' : 'SÄLJ';
+
+                    if(x[1]) {
+                        td.style = 'color: green;';
+                    } else {
+                        td.style = 'color: red;';
+                    }
+
+                    tr.append(td)
+                }
+
+                document.getElementById("decision_data").append(tr);
+                tr = document.createElement('tr');
+            }
+        },
+        dataType: "json"
+    });
+});
+
+var create
+
+</script>
+
+<div id="container" style="height: 400px; min-width: 310px"></div>
+
+<div id="info">
+    <p>
+        <h3>CAGR:</h3>
+        <span id="cagr"></span>
+    </p>
+
+    <p>
+        <h3>STDEV:</h3>
+        <span id="stdev"></span>
+    </p>
+
+    <p>
+        <h3>Sharpe:</h3>
+        <span id="sharpe"></span>
+    </p>
+
+    <p>
+        <h3>Max drawdown:</h3>
+        <span id="maxdd"></span> from <span id="from"></span> to <span id="to"></span>
+    </p>
+</div>
+
+
+<div id="decision">
+    <h2>Decisions</h2>
+
+
+    <table id="decision_data" style="font-size: 12px;">
+
+    </table>
+</div>
